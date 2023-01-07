@@ -1,6 +1,6 @@
 package com.devcraft.realestatestatbg.services;
 
-import com.devcraft.realestatestatbg.domain.RealEstateAveragePricePerSqM;
+import com.devcraft.realestatestatbg.domain.RealEstateAveragePrice;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,31 +14,33 @@ import java.util.*;
 
 @Service
 @Slf4j
-public class ImotBgScraper implements ScraperService<RealEstateAveragePricePerSqM> {
-    public static final int TWO_ROOM_PRICE_COL = 6;
+public class ImotBgScraper implements ScraperService<RealEstateAveragePrice> {
+    public static final int TWO_ROOM_PRICE_COL = 5;
     public static final int THREE_ROOM_PRICE_COL = TWO_ROOM_PRICE_COL + 3;
-    @Value("#{websites.urls.imotbg")
+    @Value("${websites.imotbg.stats}")
     private String url;
 
     @Override
-    public Map<String, Set<RealEstateAveragePricePerSqM>> getAllStats() {
-        Map<String, Set<RealEstateAveragePricePerSqM>> resultMap = new HashMap<>();
-        resultMap.put("Two Room Prices by Region In Sofia", getTwoRoomPricesByRegion());
-        resultMap.put("Three Room Prices by Region In Sofia", getThreeRoomPricesByRegion());
+    public Map<String, Set<RealEstateAveragePrice>> getAllStats() {
+        Map<String, Set<RealEstateAveragePrice>> resultMap = new HashMap<>();
+        String twoRoomDesc = "Two Room Apartments Prices by Region In Sofia";
+        String threeRoomDesc = "Three Room Prices Apartments by Region In Sofia";
+        resultMap.put("twoRoomByRegion", getTwoRoomPricesByRegion(twoRoomDesc));
+        resultMap.put("threeRoomByRegion", getThreeRoomPricesByRegion(threeRoomDesc));
         return resultMap;
     }
 
-    public Set<RealEstateAveragePricePerSqM> getTwoRoomPricesByRegion() {
-        return scrapeImotBg(url, TWO_ROOM_PRICE_COL);
+    public Set<RealEstateAveragePrice> getTwoRoomPricesByRegion(String desc) {
+        return scrapeImotBg(url, TWO_ROOM_PRICE_COL, desc);
     }
 
-    public Set<RealEstateAveragePricePerSqM> getThreeRoomPricesByRegion() {
-        return scrapeImotBg(url, THREE_ROOM_PRICE_COL);
+    public Set<RealEstateAveragePrice> getThreeRoomPricesByRegion(String desc) {
+        return scrapeImotBg(url, THREE_ROOM_PRICE_COL, desc);
     }
 
-    private Set<RealEstateAveragePricePerSqM> scrapeImotBg(String url, int priceCol) {
+    private Set<RealEstateAveragePrice> scrapeImotBg(String url, int priceCol, String desc) {
         System.out.println(url);
-        Set<RealEstateAveragePricePerSqM> realEstateAveragePricePerSqMSet = new HashSet<>();
+        Set<RealEstateAveragePrice> realEstateAveragePriceSet = new HashSet<>();
         try {
             Document doc = Jsoup.connect(url).get();
             Element table = doc.select("table[id=tableStats]").first();
@@ -52,12 +54,12 @@ public class ImotBgScraper implements ScraperService<RealEstateAveragePricePerSq
                 if(!pricePerSqMString.equals("-")) {
                     pricePerSqMString = pricePerSqMString.replaceAll("\\s+", "");
                     double pricePerSqM = Double.parseDouble(pricePerSqMString);
-                    RealEstateAveragePricePerSqM realEstateAveragePricePerSqM = new RealEstateAveragePricePerSqM(pricePerSqM, "EUR", region, "Two Room Apartment");
-                    realEstateAveragePricePerSqMSet.add(realEstateAveragePricePerSqM);
-                    System.out.println(realEstateAveragePricePerSqM);
+                    RealEstateAveragePrice realEstateAveragePrice = new RealEstateAveragePrice(pricePerSqM, "EUR", region, desc);
+                    realEstateAveragePriceSet.add(realEstateAveragePrice);
+//                    System.out.println(realEstateAveragePricePerSqM);
                 }
             }
-            return realEstateAveragePricePerSqMSet;
+            return realEstateAveragePriceSet;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

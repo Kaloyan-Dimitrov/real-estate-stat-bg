@@ -7,7 +7,7 @@ import lombok.ToString;
 @Data
 @ToString
 @AllArgsConstructor
-public class RealEstateAveragePricePerSqM {
+public class RealEstateAveragePrice {
     Double price;
     String currency;
     String region;
