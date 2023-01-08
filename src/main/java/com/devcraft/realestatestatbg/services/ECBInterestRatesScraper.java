@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> {
@@ -19,6 +20,9 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
     public static final int MARGINAL_LENDING_FACILITY_COL = DEPOSIT_FACILITY_COL + 3;
     public static final int YEAR_COL = 0;
     public static final int DATE_COL = 1;
+    public static final String DATE_FORMAT = "yyyy dd MMM";
+
+    private String lastParsedYear = null;
 
     @Value("${websites.ecb.key_interest_rates}")
     private String url;
@@ -31,7 +35,7 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
 
     private Set<KeyInterestRate> scrapeECBInterestRates(String url) {
         System.out.println(url);
-        Set<KeyInterestRate> realEstateAveragePricePerSqMSet = new HashSet<>();
+        Set<KeyInterestRate> realEstateAveragePricePerSqMSet = null;
         try {
             Document doc = Jsoup.connect(url).get();
             Element table = doc.select("table").first();
@@ -40,37 +44,46 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
             if(tableBody == null) return null;
             Elements rows = tableBody.getElementsByTag("tr");
             String lastYear = null;
-            for (Element row : rows) {
-                Elements cols = row.getElementsByTag("td");
-//                System.out.println(cols.size());
-//                System.out.println(cols);
-                String yearString = cols.get(YEAR_COL).text();
-                String dateString = cols.get(DATE_COL).text();
-                String depositFacilityString = cols.get(DEPOSIT_FACILITY_COL).text();
-                String marginalLendingFacilityString = cols.get(MARGINAL_LENDING_FACILITY_COL).text();
-                if(yearString.isEmpty()) {
-                    yearString = lastYear;
-                } else {
-                    lastYear = yearString;
-                }
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyy dd MMM");
-                String dateToParse = yearString + " " + dateString;
-                if(dateToParse.contains(".")) {
-                dateToParse = dateToParse.substring(0, dateToParse.indexOf('.'));
-                }
-                Date date = formatter.parse(dateToParse);
-                KeyInterestRate keyInterestRate = new KeyInterestRate();
-                keyInterestRate.setDate(date);
-                depositFacilityString = depositFacilityString.replaceAll("\u2212", "-");
-                marginalLendingFacilityString = marginalLendingFacilityString.replaceAll("\u2212", "-");
-                keyInterestRate.setDepositFacility(Double.valueOf(depositFacilityString));
-                keyInterestRate.setMarginalLendingFacility(Double.valueOf(marginalLendingFacilityString));
-                realEstateAveragePricePerSqMSet.add(keyInterestRate);
-                System.out.println(keyInterestRate);
-            }
+            realEstateAveragePricePerSqMSet = rows.stream()
+                                                .map(row -> row.getElementsByTag("td"))
+                                                .map(this::parseTableCols)
+                                                .collect(Collectors.toSet());
             return realEstateAveragePricePerSqMSet;
-        } catch (IOException | ParseException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private KeyInterestRate parseTableCols(Elements cols) {
+        String yearString = cols.get(YEAR_COL).text();
+        String dateString = cols.get(DATE_COL).text();
+        String depositFacilityString = cols.get(DEPOSIT_FACILITY_COL).text();
+        String marginalLendingFacilityString = cols.get(MARGINAL_LENDING_FACILITY_COL).text();
+
+        Date date = parseDateFromString(yearString, dateString);
+
+        depositFacilityString = depositFacilityString.replaceAll("\u2212", "-");
+        marginalLendingFacilityString = marginalLendingFacilityString.replaceAll("\u2212", "-");
+
+        return new KeyInterestRate(date, depositFacilityString, marginalLendingFacilityString);
+    }
+
+    private Date parseDateFromString(String yearString, String dateString) {
+        if(yearString.isEmpty()) yearString = this.lastParsedYear;
+        else this.lastParsedYear = yearString;
+
+        SimpleDateFormat formatter = new SimpleDateFormat(DATE_FORMAT);
+        String dateToParse = yearString + " " + dateString;
+        if(dateToParse.contains(".")) {
+            dateToParse = dateToParse.substring(0, dateToParse.indexOf('.'));
+        }
+
+        Date date = null;
+        try {
+            date = formatter.parse(dateToParse);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+        return date;
     }
 }

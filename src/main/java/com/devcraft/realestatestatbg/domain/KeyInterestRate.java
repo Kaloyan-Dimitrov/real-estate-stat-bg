@@ -15,4 +15,10 @@ public class KeyInterestRate {
     Date date;
     Double depositFacility;
     Double marginalLendingFacility;
+
+    public KeyInterestRate(Date date, String depositFacilityString, String marginalLendingFacilityString) {
+        this.date = date;
+        this.depositFacility = Double.valueOf(depositFacilityString);
+        this.marginalLendingFacility = Double.valueOf(marginalLendingFacilityString);
+    }
 }
