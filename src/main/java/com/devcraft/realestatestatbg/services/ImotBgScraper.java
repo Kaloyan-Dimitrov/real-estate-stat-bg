@@ -17,6 +17,7 @@ import java.util.*;
 public class ImotBgScraper implements ScraperService<RealEstateAveragePrice> {
     public static final int TWO_ROOM_PRICE_COL = 5;
     public static final int THREE_ROOM_PRICE_COL = TWO_ROOM_PRICE_COL + 3;
+    public static final int REGION_COL = 0;
     @Value("${websites.imotbg.stats}")
     private String url;
 
@@ -49,7 +50,7 @@ public class ImotBgScraper implements ScraperService<RealEstateAveragePrice> {
             List<Element> valueRows = rows.subList(2, rows.size() - 2);
             for (Element row : valueRows) {
                 Elements cols = row.getElementsByTag("td");
-                String region = cols.get(0).text();
+                String region = cols.get(REGION_COL).text();
                 String pricePerSqMString = cols.get(priceCol).text();
                 if(!pricePerSqMString.equals("-")) {
                     pricePerSqMString = pricePerSqMString.replaceAll("\\s+", "");

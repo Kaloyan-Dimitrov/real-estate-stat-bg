@@ -1,6 +1,7 @@
 package com.devcraft.realestatestatbg.junk;
 
 import com.devcraft.realestatestatbg.domain.RealEstateAveragePrice;
+import com.devcraft.realestatestatbg.services.ECBInterestRatesScraper;
 import com.devcraft.realestatestatbg.services.ImotBgScraper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -14,9 +15,11 @@ import java.util.Set;
 public class Bootstrap implements CommandLineRunner {
 
     ImotBgScraper imotBgScraper;
+    ECBInterestRatesScraper ecbInterestRatesScraper;
 
-    public Bootstrap(ImotBgScraper imotBgScraper) {
+    public Bootstrap(ImotBgScraper imotBgScraper, ECBInterestRatesScraper ecbInterestRatesScraper) {
         this.imotBgScraper = imotBgScraper;
+        this.ecbInterestRatesScraper = ecbInterestRatesScraper;
     }
 
     @Override
@@ -29,6 +32,7 @@ public class Bootstrap implements CommandLineRunner {
             // print the double with two trailing digits
             System.out.printf("%.2f %s %n", average, values.stream().findFirst().get().getCurrency());
         });
+        ecbInterestRatesScraper.getAllStats();
     }
 
 }
