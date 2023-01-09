@@ -20,12 +20,17 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
     public static final int MARGINAL_LENDING_FACILITY_COL = DEPOSIT_FACILITY_COL + 3;
     public static final int YEAR_COL = 0;
     public static final int DATE_COL = 1;
-    public static final String DATE_FORMAT = "yyyy dd MMM";
+    public final String DATE_FORMAT;
 
     private String lastParsedYear = null;
 
-    @Value("${websites.ecb.key_interest_rates}")
-    private String url;
+    private final String url;
+
+    public ECBInterestRatesScraper(@Value("${websites.ecb.key_interest_rates}") String url,
+                                   @Value("${websites.ecb.date_format}") String DATE_FORMAT) {
+        this.url = url;
+        this.DATE_FORMAT = DATE_FORMAT;
+    }
     @Override
     public Map<String, Set<KeyInterestRate>> getAllStats() {
         Map<String, Set<KeyInterestRate>> resultMap = new HashMap<>();
@@ -33,9 +38,8 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
         return resultMap;
     }
 
-    private Set<KeyInterestRate> scrapeECBInterestRates(String url) {
+    public Set<KeyInterestRate> scrapeECBInterestRates(String url) {
         System.out.println(url);
-        Set<KeyInterestRate> realEstateAveragePricePerSqMSet = null;
         try {
             Document doc = Jsoup.connect(url).get();
             Element table = doc.select("table").first();
@@ -43,18 +47,17 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
             Element tableBody = table.select("tbody").first();
             if(tableBody == null) return null;
             Elements rows = tableBody.getElementsByTag("tr");
-            String lastYear = null;
-            realEstateAveragePricePerSqMSet = rows.stream()
-                                                .map(row -> row.getElementsByTag("td"))
-                                                .map(this::parseTableCols)
-                                                .collect(Collectors.toSet());
-            return realEstateAveragePricePerSqMSet;
+
+            return rows.stream()
+                        .map(row -> row.getElementsByTag("td"))
+                        .map(this::parseTableCols)
+                        .collect(Collectors.toSet());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private KeyInterestRate parseTableCols(Elements cols) {
+    public KeyInterestRate parseTableCols(Elements cols) {
         String yearString = cols.get(YEAR_COL).text();
         String dateString = cols.get(DATE_COL).text();
         String depositFacilityString = cols.get(DEPOSIT_FACILITY_COL).text();
@@ -68,7 +71,7 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
         return new KeyInterestRate(date, depositFacilityString, marginalLendingFacilityString);
     }
 
-    private Date parseDateFromString(String yearString, String dateString) {
+    public Date parseDateFromString(String yearString, String dateString) {
         if(yearString.isEmpty()) yearString = this.lastParsedYear;
         else this.lastParsedYear = yearString;
 
@@ -78,7 +81,7 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
             dateToParse = dateToParse.substring(0, dateToParse.indexOf('.'));
         }
 
-        Date date = null;
+        Date date;
         try {
             date = formatter.parse(dateToParse);
         } catch (ParseException e) {
