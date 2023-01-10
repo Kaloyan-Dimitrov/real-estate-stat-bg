@@ -74,7 +74,7 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
         if(yearString.isEmpty()) yearString = this.lastParsedYear;
         else this.lastParsedYear = yearString;
 
-        SimpleDateFormat formatter = new SimpleDateFormat(DATE_FORMAT);
+        SimpleDateFormat formatter = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
         String dateToParse = yearString + " " + dateString;
         if(dateToParse.contains("."))
             dateToParse = dateToParse.substring(0, dateToParse.indexOf('.'));

@@ -89,11 +89,10 @@ class ECBInterestRatesScraperTest {
 
     @Test
     void parseDateFromString() {
-        String yearString = "2020";
-        String dateString = "01 Jan";
+        String yearString = "2022";
+        String dateString = "21 Dec.";
 
         Date result = ecbInterestRatesScraper.parseDateFromString(yearString, dateString);
-
-        assertEquals("2020 01 Jan", new SimpleDateFormat(DATE_FORMAT).format(result));
+        assertEquals("2022 21 Dec", new SimpleDateFormat(DATE_FORMAT).format(result));
     }
 }
