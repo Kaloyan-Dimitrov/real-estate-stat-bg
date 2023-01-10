@@ -27,9 +27,11 @@ import static org.mockito.Mockito.mockStatic;
 class ECBInterestRatesScraperTest {
     public static final SimpleDateFormat YEAR_FORMAT = new SimpleDateFormat("yyyy");
     public static final SimpleDateFormat DAY_FORMAT = new SimpleDateFormat("dd MMM");
-    private final String url = "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/key_ecb_interest_rates/html/index.en.html";
+    private static final String URL = "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/key_ecb_interest_rates/html/index.en.html";
+    public static final Double DEPOSIT_FACILITY = -0.5;
+    public static final Double LENDING_FACILITY = 0.75;
     private final String DATE_FORMAT = "yyyy dd MMM";
-    ECBInterestRatesScraper ecbInterestRatesScraper = new ECBInterestRatesScraper(url, DATE_FORMAT);
+    ECBInterestRatesScraper ecbInterestRatesScraper = new ECBInterestRatesScraper(URL, DATE_FORMAT);
 
     @Mock
     private Connection connection;
@@ -40,15 +42,15 @@ class ECBInterestRatesScraperTest {
         testCols = new Elements();
         testCols.add(new Element("td").text("2020"));
         testCols.add(new Element("td").text("01 Jan"));
-        testCols.add(new Element("td").text("-0.50"));
+        testCols.add(new Element("td").text(String.valueOf(DEPOSIT_FACILITY)));
         testCols.add(new Element("td"));
         testCols.add(new Element("td"));
-        testCols.add(new Element("td").text("0.75"));
+        testCols.add(new Element("td").text(String.valueOf(LENDING_FACILITY)));
     }
 
     @Test
-    void scrapeECBInterestRates() throws IOException {
-        Document doc = new Document(url);
+    void scrape() {
+        Document doc = new Document(URL);
         Element table = new Element("table");
         Element tableBody = new Element("tbody");
         Elements rows = new Elements();
@@ -61,15 +63,17 @@ class ECBInterestRatesScraperTest {
             given(connection.get()).willReturn(doc);
             jsoup.when(() -> Jsoup.connect(anyString())).thenReturn(connection);
 
-            Set<KeyInterestRate> keyInterestRates = ecbInterestRatesScraper.scrapeECBInterestRates(url);
+            Set<KeyInterestRate> keyInterestRates = ecbInterestRatesScraper.scrape().get("keyECBInterestRates");
 
             assertEquals(1, keyInterestRates.size());
 
             KeyInterestRate keyInterestRate = keyInterestRates.iterator().next();
             assertEquals("2020", YEAR_FORMAT.format(keyInterestRate.getDate()));
             assertEquals("01 Jan", DAY_FORMAT.format(keyInterestRate.getDate()));
-            assertEquals(-0.5, keyInterestRate.getDepositFacility());
-            assertEquals(0.75, keyInterestRate.getMarginalLendingFacility());
+            assertEquals(DEPOSIT_FACILITY, keyInterestRate.getDepositFacility());
+            assertEquals(LENDING_FACILITY, keyInterestRate.getMarginalLendingFacility());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -79,8 +83,8 @@ class ECBInterestRatesScraperTest {
 
         assertEquals("2020", YEAR_FORMAT.format(result.getDate()));
         assertEquals("01 Jan", DAY_FORMAT.format(result.getDate()));
-        assertEquals(-0.50, result.getDepositFacility());
-        assertEquals(0.75, result.getMarginalLendingFacility());
+        assertEquals(DEPOSIT_FACILITY, result.getDepositFacility());
+        assertEquals(LENDING_FACILITY, result.getMarginalLendingFacility());
     }
 
     @Test

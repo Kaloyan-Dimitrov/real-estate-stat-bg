@@ -11,58 +11,60 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class ImotBgScraper implements ScraperService<RealEstateAveragePrice> {
-    public static final int TWO_ROOM_PRICE_COL = 5;
-    public static final int THREE_ROOM_PRICE_COL = TWO_ROOM_PRICE_COL + 3;
+    public static final int TWO_BEDROOM_PRICE_COL = 5;
+    public static final int THREE_BEDROOM_PRICE_COL = TWO_BEDROOM_PRICE_COL + 3;
     public static final int REGION_COL = 0;
-    @Value("${websites.imotbg.stats}")
+    public static final String TWO_BEDROOM_DESC = "Two Bedroom Apartments Prices by Region In Sofia";
+    public static final String THREE_BEDROOM_DESC = "Three Bedroom Apartments Prices by Region In Sofia";
     private String url;
 
+    public ImotBgScraper(@Value("${websites.imotbg.stats}") String url) {
+        this.url = url;
+    }
+
     @Override
-    public Map<String, Set<RealEstateAveragePrice>> getAllStats() {
-        Map<String, Set<RealEstateAveragePrice>> resultMap = new HashMap<>();
-        String twoRoomDesc = "Two Room Apartments Prices by Region In Sofia";
-        String threeRoomDesc = "Three Room Prices Apartments by Region In Sofia";
-        resultMap.put("twoRoomByRegion", getTwoRoomPricesByRegion(twoRoomDesc));
-        resultMap.put("threeRoomByRegion", getThreeRoomPricesByRegion(threeRoomDesc));
-        return resultMap;
-    }
-
-    public Set<RealEstateAveragePrice> getTwoRoomPricesByRegion(String desc) {
-        return scrapeImotBg(url, TWO_ROOM_PRICE_COL, desc);
-    }
-
-    public Set<RealEstateAveragePrice> getThreeRoomPricesByRegion(String desc) {
-        return scrapeImotBg(url, THREE_ROOM_PRICE_COL, desc);
-    }
-
-    private Set<RealEstateAveragePrice> scrapeImotBg(String url, int priceCol, String desc) {
+    public Map<String, Set<RealEstateAveragePrice>> scrape() {
         System.out.println(url);
-        Set<RealEstateAveragePrice> realEstateAveragePriceSet = new HashSet<>();
         try {
             Document doc = Jsoup.connect(url).get();
             Element table = doc.select("table[id=tableStats]").first();
             if(table == null) return null;
             Elements rows = table.getElementsByTag("tr");
+            System.out.println(rows.size());
             List<Element> valueRows = rows.subList(2, rows.size() - 2);
-            for (Element row : valueRows) {
-                Elements cols = row.getElementsByTag("td");
-                String region = cols.get(REGION_COL).text();
-                String pricePerSqMString = cols.get(priceCol).text();
-                if(!pricePerSqMString.equals("-")) {
-                    pricePerSqMString = pricePerSqMString.replaceAll("\\s+", "");
-                    double pricePerSqM = Double.parseDouble(pricePerSqMString);
-                    RealEstateAveragePrice realEstateAveragePrice = new RealEstateAveragePrice(pricePerSqM, "EUR", region, desc);
-                    realEstateAveragePriceSet.add(realEstateAveragePrice);
-//                    System.out.println(realEstateAveragePricePerSqM);
-                }
-            }
-            return realEstateAveragePriceSet;
+
+            Set<RealEstateAveragePrice> twoBedroomSet = getPricesSet(valueRows, TWO_BEDROOM_PRICE_COL, TWO_BEDROOM_DESC);
+            Set<RealEstateAveragePrice> threeBedroomSet = getPricesSet(valueRows, THREE_BEDROOM_PRICE_COL, THREE_BEDROOM_DESC);
+            return new HashMap<>() {{
+                put("twoBedroomByRegion", twoBedroomSet);
+                put("threeBedroomByRegion", threeBedroomSet);
+            }};
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Set<RealEstateAveragePrice> getPricesSet(List<Element> valueRows, int priceCol, String desc) {
+        return valueRows.stream()
+                .map(row -> row.getElementsByTag("td"))
+                .map(cols -> parseTableCols(cols, priceCol, desc))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    public RealEstateAveragePrice parseTableCols(Elements cols, int priceCol, String desc) {
+        String region = cols.get(REGION_COL).text();
+        String pricePerSqMString = cols.get(priceCol).text();
+
+        if(pricePerSqMString.equals("-")) return null;
+
+        pricePerSqMString = pricePerSqMString.replaceAll("\\s+", "");
+        double pricePerSqM = Double.parseDouble(pricePerSqMString);
+        return new RealEstateAveragePrice(pricePerSqM, "EUR", region, desc);
     }
 }

@@ -25,14 +25,14 @@ public class Bootstrap implements CommandLineRunner {
     @Override
     public void run(String... args) {
         System.out.println("Bootstrap is running");
-        Map<String, Set<RealEstateAveragePrice>> realEstateResultMap = imotBgScraper.getAllStats();
+        Map<String, Set<RealEstateAveragePrice>> realEstateResultMap = imotBgScraper.scrape();
         realEstateResultMap.forEach((key, values) -> {
             System.out.println(key + " average: ");
             Double average = values.stream().map(RealEstateAveragePrice::getPrice).reduce(0.0, Double::sum) / values.size();
             // print the double with two trailing digits
             System.out.printf("%.2f %s %n", average, values.stream().findFirst().get().getCurrency());
         });
-        ecbInterestRatesScraper.getAllStats();
+        ecbInterestRatesScraper.scrape();
     }
 
 }

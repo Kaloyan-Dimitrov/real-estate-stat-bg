@@ -31,14 +31,9 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
         this.url = url;
         this.DATE_FORMAT = DATE_FORMAT;
     }
-    @Override
-    public Map<String, Set<KeyInterestRate>> getAllStats() {
-        Map<String, Set<KeyInterestRate>> resultMap = new HashMap<>();
-        resultMap.put("keyECBInterestRates", scrapeECBInterestRates(url));
-        return resultMap;
-    }
 
-    public Set<KeyInterestRate> scrapeECBInterestRates(String url) {
+    @Override
+    public Map<String, Set<KeyInterestRate>> scrape() {
         System.out.println(url);
         try {
             Document doc = Jsoup.connect(url).get();
@@ -48,10 +43,14 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
             if(tableBody == null) return null;
             Elements rows = tableBody.getElementsByTag("tr");
 
-            return rows.stream()
+            Set<KeyInterestRate> resultSet = rows.stream()
                         .map(row -> row.getElementsByTag("td"))
                         .map(this::parseTableCols)
                         .collect(Collectors.toSet());
+
+            return new HashMap<>() {{
+                put("keyECBInterestRates", resultSet);
+            }};
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -77,9 +76,8 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
 
         SimpleDateFormat formatter = new SimpleDateFormat(DATE_FORMAT);
         String dateToParse = yearString + " " + dateString;
-        if(dateToParse.contains(".")) {
+        if(dateToParse.contains("."))
             dateToParse = dateToParse.substring(0, dateToParse.indexOf('.'));
-        }
 
         Date date;
         try {

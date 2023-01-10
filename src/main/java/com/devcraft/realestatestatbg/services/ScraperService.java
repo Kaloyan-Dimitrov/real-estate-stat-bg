@@ -5,5 +5,5 @@ import java.util.Set;
 
 public interface ScraperService<T> {
 
-    Map<String, Set<T>> getAllStats();
+    Map<String, Set<T>> scrape();
 }
