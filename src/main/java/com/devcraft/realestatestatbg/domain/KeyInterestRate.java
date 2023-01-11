@@ -1,17 +1,25 @@
 package com.devcraft.realestatestatbg.domain;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.util.Date;
 
-@Data
+@Getter
+@Setter
+@RequiredArgsConstructor
 @ToString
 @AllArgsConstructor
-@NoArgsConstructor
+@Entity
+@Table(name = "key_interest_rates")
 public class KeyInterestRate {
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @Column(name = "id", nullable = false)
+    private Long id;
+
     Date date;
     Double depositFacility;
     Double marginalLendingFacility;
