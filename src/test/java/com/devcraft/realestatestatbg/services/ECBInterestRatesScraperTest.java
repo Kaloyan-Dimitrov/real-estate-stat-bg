@@ -18,7 +18,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
@@ -63,7 +63,7 @@ class ECBInterestRatesScraperTest {
             given(connection.get()).willReturn(doc);
             jsoup.when(() -> Jsoup.connect(anyString())).thenReturn(connection);
 
-            Set<KeyInterestRate> keyInterestRates = ecbInterestRatesScraper.scrape().get("keyECBInterestRates");
+            Set<KeyInterestRate> keyInterestRates = ecbInterestRatesScraper.scrape();
 
             assertEquals(1, keyInterestRates.size());
 

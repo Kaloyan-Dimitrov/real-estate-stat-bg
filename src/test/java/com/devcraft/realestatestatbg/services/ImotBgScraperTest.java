@@ -1,6 +1,7 @@
 package com.devcraft.realestatestatbg.services;
 
-import com.devcraft.realestatestatbg.domain.RealEstateAveragePrice;
+import com.devcraft.realestatestatbg.domain.AverageRegionPrice;
+import com.devcraft.realestatestatbg.domain.RealEstateType;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -64,17 +65,24 @@ class ImotBgScraperTest {
             jsoup.when(() -> Jsoup.connect(anyString())).thenReturn(connection);
             when(connection.get()).thenReturn(doc);
 
-            Set<RealEstateAveragePrice> threeBedroomResultSet = imotBgScraper.scrape().get("threeBedroomByRegion");
-            Set<RealEstateAveragePrice> twoBedroomResultSet = imotBgScraper.scrape().get("twoBedroomByRegion");
+            Set<AverageRegionPrice> averageRegionPricesResultSet = imotBgScraper.scrape();
 
-            assertEquals(1, twoBedroomResultSet.size());
-            assertEquals(1, threeBedroomResultSet.size());
+            assertEquals(2, averageRegionPricesResultSet.size());
 
-            RealEstateAveragePrice twoBedroomResult = twoBedroomResultSet.stream().findFirst().orElseThrow();
-            RealEstateAveragePrice threeBedroomResult = threeBedroomResultSet.stream().findFirst().orElseThrow();
+            AverageRegionPrice twoBedroomResult = averageRegionPricesResultSet
+                    .stream()
+                    .filter(averageRegionPrice -> averageRegionPrice.getType().equals(RealEstateType.TWO_BEDROOM_APARTMENT))
+                    .findFirst()
+                    .orElseThrow();
 
-            assertEquals(REGION, twoBedroomResult.getRegion());
-            assertEquals(REGION, threeBedroomResult.getRegion());
+            AverageRegionPrice threeBedroomResult = averageRegionPricesResultSet
+                    .stream()
+                    .filter(averageRegionPrice -> averageRegionPrice.getType().equals(RealEstateType.THREE_BEDROOM_APARTMENT))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertEquals(REGION, twoBedroomResult.getRegion().getName());
+            assertEquals(REGION, threeBedroomResult.getRegion().getName());
             assertEquals(TWO_BED, twoBedroomResult.getPrice());
             assertEquals(THREE_BED, threeBedroomResult.getPrice());
         } catch (IOException e) {
@@ -84,25 +92,25 @@ class ImotBgScraperTest {
 
     @Test
     void getPricesSet() {
-        Set<RealEstateAveragePrice> pricesSet = imotBgScraper.getPricesSet(testRows.eq(2),
+        Set<AverageRegionPrice> pricesSet = imotBgScraper.getPricesSet(testRows.eq(2),
                                                                         ImotBgScraper.THREE_BEDROOM_PRICE_COL,
-                                                                        ImotBgScraper.THREE_BEDROOM_DESC);
+                                                                        RealEstateType.THREE_BEDROOM_APARTMENT);
         assertEquals(1, pricesSet.size());
-        RealEstateAveragePrice price = pricesSet.iterator().next();
-        assertEquals(REGION, price.getRegion());
+        AverageRegionPrice price = pricesSet.iterator().next();
+        assertEquals(REGION, price.getRegion().getName());
         assertEquals(THREE_BED, price.getPrice());
-        assertEquals(ImotBgScraper.THREE_BEDROOM_DESC, price.getDesc());
-        assertEquals(REGION, price.getRegion());
+        assertEquals(RealEstateType.THREE_BEDROOM_APARTMENT, price.getType());
+        assertEquals(REGION, price.getRegion().getName());
     }
 
     @Test
     void parseTableCols() {
-        RealEstateAveragePrice realEstateAveragePrice = imotBgScraper.parseTableCols(testCols,
-                                                                                    ImotBgScraper.TWO_BEDROOM_PRICE_COL,
-                                                                                    ImotBgScraper.TWO_BEDROOM_DESC);
+        AverageRegionPrice averageRegionPrice = imotBgScraper.parseTableCols(testCols,
+                                                                            ImotBgScraper.TWO_BEDROOM_PRICE_COL,
+                                                                            RealEstateType.TWO_BEDROOM_APARTMENT);
 
-        assertEquals(TWO_BED, realEstateAveragePrice.getPrice());
-        assertEquals(ImotBgScraper.TWO_BEDROOM_DESC, realEstateAveragePrice.getDesc());
-        assertEquals(REGION, realEstateAveragePrice.getRegion());
+        assertEquals(TWO_BED, averageRegionPrice.getPrice());
+        assertEquals(RealEstateType.TWO_BEDROOM_APARTMENT, averageRegionPrice.getType());
+        assertEquals(REGION, averageRegionPrice.getRegion().getName());
     }
 }

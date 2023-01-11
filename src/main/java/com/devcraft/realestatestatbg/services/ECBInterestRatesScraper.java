@@ -11,7 +11,10 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,7 +36,7 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
     }
 
     @Override
-    public Map<String, Set<KeyInterestRate>> scrape() {
+    public Set<KeyInterestRate> scrape() {
         System.out.println(url);
         try {
             Document doc = Jsoup.connect(url).get();
@@ -43,14 +46,12 @@ public class ECBInterestRatesScraper implements ScraperService<KeyInterestRate> 
             if(tableBody == null) return null;
             Elements rows = tableBody.getElementsByTag("tr");
 
-            Set<KeyInterestRate> resultSet = rows.stream()
+            return rows.stream()
                         .map(row -> row.getElementsByTag("td"))
                         .map(this::parseTableCols)
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
 
-            return new HashMap<>() {{
-                put("keyECBInterestRates", resultSet);
-            }};
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
